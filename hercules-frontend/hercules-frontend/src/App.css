@@ -1,0 +1,23 @@
+@media print {
+
+  .no-print,
+  .sidebar,
+  .MuiDrawer-root {
+    display: none !important;
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+  }
+
+  .print-container {
+    width: 100% !important;
+    margin: 0 auto !important;
+    overflow: visible !important;
+  }
+
+  canvas {
+    page-break-inside: avoid;
+  }
+}

@@ -1,0 +1,29 @@
+version: '3.9'
+
+services:
+  backend:
+    build:
+      context: ./hercules-backend
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./hercules-backend:/app
+    environment:
+      - FLASK_ENV=development
+    networks:
+      - hercules-net
+
+  frontend:
+    build: ./hercules-frontend
+    container_name: hercules-frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./hercules-frontend:/app
+    depends_on:
+      - backend
+    networks:
+      - hercules-net
+
+networks:
+  hercules-net:

@@ -1,0 +1,84 @@
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.8/site-packages/sqlalchemy/engine/base.py", line 1964, in _exec_single_context
+    self.dialect.do_execute(
+  File "/opt/anaconda3/lib/python3.8/site-packages/sqlalchemy/engine/default.py", line 945, in do_execute
+    cursor.execute(statement, parameters)
+  File "/opt/anaconda3/lib/python3.8/site-packages/pymysql/cursors.py", line 153, in execute
+    result = self._query(query)
+  File "/opt/anaconda3/lib/python3.8/site-packages/pymysql/cursors.py", line 322, in _query
+    conn.query(q)
+  File "/opt/anaconda3/lib/python3.8/site-packages/pymysql/connections.py", line 563, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+  File "/opt/anaconda3/lib/python3.8/site-packages/pymysql/connections.py", line 825, in _read_query_result
+    result.read()
+  File "/opt/anaconda3/lib/python3.8/site-packages/pymysql/connections.py", line 1199, in read
+    first_packet = self.connection._read_packet()
+  File "/opt/anaconda3/lib/python3.8/site-packages/pymysql/connections.py", line 775, in _read_packet
+    packet.raise_for_error()
+  File "/opt/anaconda3/lib/python3.8/site-packages/pymysql/protocol.py", line 219, in raise_for_error
+    err.raise_mysql_exception(self._data)
+  File "/opt/anaconda3/lib/python3.8/site-packages/pymysql/err.py", line 150, in raise_mysql_exception
+    raise errorclass(errno, errval)
+pymysql.err.OperationalError: (1054, "Unknown column 'kpi_material.Batch GUID' in 'field list'")
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/vinodhkumar/Desktop/Kpi_Final-main/hercules-backend/routes/kpi_routes.py", line 38, in get_kpis
+    pagination = KPIMaterial.query.order_by(KPIMaterial.Batch_Act_Start.desc()).paginate(
+  File "/opt/anaconda3/lib/python3.8/site-packages/flask_sqlalchemy/query.py", line 98, in paginate
+    return QueryPagination(
+  File "/opt/anaconda3/lib/python3.8/site-packages/flask_sqlalchemy/pagination.py", line 72, in __init__
+    items = self._query_items()
+  File "/opt/anaconda3/lib/python3.8/site-packages/flask_sqlalchemy/pagination.py", line 358, in _query_items
+    out = query.limit(self.per_page).offset(self._query_offset).all()
+  File "/opt/anaconda3/lib/python3.8/site-packages/sqlalchemy/orm/query.py", line 2704, in all
+    return self._iter().all()  # type: ignore
+  File "/opt/anaconda3/lib/python3.8/site-packages/sqlalchemy/orm/query.py", line 2858, in _iter
+    result: Union[ScalarResult[_T], Result[_T]] = self.session.execute(
+  File "/opt/anaconda3/lib/python3.8/site-packages/sqlalchemy/orm/session.py", line 2365, in execute
+    return self._execute_internal(
+  File "/opt/anaconda3/lib/python3.8/site-packages/sqlalchemy/orm/session.py", line 2251, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+  File "/opt/anaconda3/lib/python3.8/site-packages/sqlalchemy/orm/context.py", line 306, in orm_execute_statement
+    result = conn.execute(
+  File "/opt/anaconda3/lib/python3.8/site-packages/sqlalchemy/engine/base.py", line 1416, in execute
+    return meth(
+  File "/opt/anaconda3/lib/python3.8/site-packages/sqlalchemy/sql/elements.py", line 523, in _execute_on_connection
+    return connection._execute_clauseelement(
+  File "/opt/anaconda3/lib/python3.8/site-packages/sqlalchemy/engine/base.py", line 1638, in _execute_clauseelement
+    ret = self._execute_context(
+  File "/opt/anaconda3/lib/python3.8/site-packages/sqlalchemy/engine/base.py", line 1843, in _execute_context
+    return self._exec_single_context(
+  File "/opt/anaconda3/lib/python3.8/site-packages/sqlalchemy/engine/base.py", line 1983, in _exec_single_context
+    self._handle_dbapi_exception(
+  File "/opt/anaconda3/lib/python3.8/site-packages/sqlalchemy/engine/base.py", line 2352, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/opt/anaconda3/lib/python3.8/site-packages/sqlalchemy/engine/base.py", line 1964, in _exec_single_context
+    self.dialect.do_execute(
+  File "/opt/anaconda3/lib/python3.8/site-packages/sqlalchemy/engine/default.py", line 945, in do_execute
+    cursor.execute(statement, parameters)
+  File "/opt/anaconda3/lib/python3.8/site-packages/pymysql/cursors.py", line 153, in execute
+    result = self._query(query)
+  File "/opt/anaconda3/lib/python3.8/site-packages/pymysql/cursors.py", line 322, in _query
+    conn.query(q)
+  File "/opt/anaconda3/lib/python3.8/site-packages/pymysql/connections.py", line 563, in query
+    self._affected_rows = self._read_query_result(unbuffered=unbuffered)
+  File "/opt/anaconda3/lib/python3.8/site-packages/pymysql/connections.py", line 825, in _read_query_result
+    result.read()
+  File "/opt/anaconda3/lib/python3.8/site-packages/pymysql/connections.py", line 1199, in read
+    first_packet = self.connection._read_packet()
+  File "/opt/anaconda3/lib/python3.8/site-packages/pymysql/connections.py", line 775, in _read_packet
+    packet.raise_for_error()
+  File "/opt/anaconda3/lib/python3.8/site-packages/pymysql/protocol.py", line 219, in raise_for_error
+    err.raise_mysql_exception(self._data)
+  File "/opt/anaconda3/lib/python3.8/site-packages/pymysql/err.py", line 150, in raise_mysql_exception
+    raise errorclass(errno, errval)
+sqlalchemy.exc.OperationalError: (pymysql.err.OperationalError) (1054, "Unknown column 'kpi_material.Batch GUID' in 'field list'")
+[SQL: SELECT kpi_material.`Batch GUID` AS `kpi_material_Batch GUID`, kpi_material.`Batch Name` AS `kpi_material_Batch Name`, kpi_material.`Product Name` AS `kpi_material_Product Name`, kpi_material.`Batch Act Start` AS `kpi_material_Batch Act Start`, kpi_material.`Batch Act End` AS `kpi_material_Batch Act End`, kpi_material.`Quantity` AS `kpi_material_Quantity`, kpi_material.`Material Name` AS `kpi_material_Material Name`, kpi_material.`Material Code` AS `kpi_material_Material Code`, kpi_material.`SetPoint Float` AS `kpi_material_SetPoint Float`, kpi_material.`Actual Value Float` AS `kpi_material_Actual Value Float`, kpi_material.`Source Server` AS `kpi_material_Source Server`, kpi_material.`ROOTGUID` AS `kpi_material_ROOTGUID`, kpi_material.`OrderId` AS `kpi_material_OrderId`, kpi_material.`EventID` AS `kpi_material_EventID`, kpi_material.`Batch Transfer Time` AS `kpi_material_Batch Transfer Time`, kpi_material.`FormulaCategoryName` AS `kpi_material_FormulaCategoryName` 
+FROM kpi_material ORDER BY kpi_material.`Batch Act Start` DESC 
+ LIMIT %(param_1)s, %(param_2)s]
+[parameters: {'param_1': 0, 'param_2': 1000}]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+
+❌ Exception occurred in /kpi GET route

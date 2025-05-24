@@ -600,29 +600,28 @@ const Dashboard = () => {
 
   const [handleButton, setHandleButton] = useState(false)
   const handlePrint = () => {
-    if (!viewReport) {
-      const nonPrintableDiv = document.getElementById("non-printable-area");
-      const nonPrintableDiv1 = document.getElementById("non-printable-area-1");
-      if (nonPrintableDiv && nonPrintableDiv1) {
-        nonPrintableDiv.style.display = "none"; // Hide the div
-        nonPrintableDiv1.style.display = "none";
-      }
-      window.print(); // Simple browser print
-      window.location.reload()
-      return;
-    }
-    const nonPrintableDiv2 = document.getElementById("non-printable-area-2");
-    const nonPrintableDiv3 = document.getElementById("non-printable-area-3");
+    // Elements in your current component
     const nonPrintableDiv = document.getElementById("non-printable-area");
-    if (nonPrintableDiv2 && nonPrintableDiv3 && nonPrintableDiv) {
-      nonPrintableDiv2.style.display = "none";  // Hide the div
-      nonPrintableDiv3.style.display = "none";
-      nonPrintableDiv.style.display = "none";
+    const nonPrintableDiv1 = document.getElementById("non-printable-area-1");
+  
+    // Elements from the external component
+    const externalDiv = document.getElementById("external-component-id");
+  
+    // Hide ALL areas conditionally
+    if (!viewReport) {
+      if (nonPrintableDiv) nonPrintableDiv.style.display = "none";
+      if (nonPrintableDiv1) nonPrintableDiv1.style.display = "none";
+      if (externalDiv) externalDiv.style.display = "none";
+    } else {
+      if (nonPrintableDiv) nonPrintableDiv.style.display = "none";
+      if (externalDiv) externalDiv.style.display = "none";
     }
-    setHandleButton(true);
+  
+    setHandleButton(true); // Still used in both cases
     window.print();
-    window.location.reload()
+    window.location.reload();
   };
+  
 
   return (
     <div ref={dashboardRef} className="print-container">

@@ -475,7 +475,10 @@ const TableView = () => {
           </div>
 
           <>
-            <div id="non-printable-area-2">
+
+              <div id="external-component-id">
+
+             
 
               {/* Filters */}
               <Box
@@ -816,11 +819,11 @@ const TableView = () => {
                   </Button>
                 </Box>
               </Box>
-            </div>
+           
 
             <div>
 
-              <div id="non-printable-area-3">
+          
                 <Box
                   sx={{
                     display: "flex",
@@ -1120,6 +1123,7 @@ const TableView = () => {
                     </LocalizationProvider>
                   </Box>
                 )}
+              </div>
               </div>
 
               <div id="printable-area">
@@ -2182,7 +2186,6 @@ const TableView = () => {
                   </TableContainer>
                 )}
               </div>
-            </div>
           </>
 
         </Box>

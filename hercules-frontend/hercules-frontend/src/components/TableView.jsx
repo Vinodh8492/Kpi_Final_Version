@@ -581,38 +581,70 @@ const TableView = () => {
         console.log(`Received ${data.length} records for the selected date range`);
 
         // For dropdown filters, still fetch all unique values
-        const fetchMetadata = async () => {
-          try {
-            // Fetch only the metadata needed for dropdowns with a separate request
-            let metadataUrl = "http://127.0.0.1:5000/api/kpi/metadata";
-            const metadataParams = new URLSearchParams();
-            metadataParams.append('startDate', selectedBoxStartDate.toISOString());
-            metadataParams.append('endDate', selectedBoxEndDate.toISOString());
-            metadataUrl += '?' + metadataParams.toString();
+        // const fetchMetadata = async () => {
+        //   try {
+        //     // Fetch only the metadata needed for dropdowns with a separate request
+        //     let metadataUrl = "http://127.0.0.1:5000/api/kpi/metadata";
+        //     const metadataParams = new URLSearchParams();
+        //     metadataParams.append('startDate', selectedBoxStartDate.toISOString());
+        //     metadataParams.append('endDate', selectedBoxEndDate.toISOString());
+        //     metadataUrl += '?' + metadataParams.toString();
             
-            const metadataResponse = await axios.get(metadataUrl);
-            let metadata = metadataResponse.data;
+        //     const metadataResponse = await axios.get(metadataUrl);
+        //     let metadata = metadataResponse.data;
             
-            if (metadata && metadata.batchNames) {
-              setBoxBatchNames(metadata.batchNames);
-            }
-            if (metadata && metadata.productNames) {
-              setBoxProductNames(metadata.productNames);
-            }
-            if (metadata && metadata.materialNames) {
-              setBoxMaterialNames(metadata.materialNames);
-            }
-          } catch (error) {
-            console.error("Error fetching metadata:", error);
-            // Fallback to extracting from current data if metadata endpoint fails
-            setBoxBatchNames(Array.from(new Set(data.map(item => item["Batch Name"]))));
-            setBoxProductNames(Array.from(new Set(data.map(item => item["Product Name"]))));
-            setBoxMaterialNames(Array.from(new Set(data.map(item => item["Material Name"]))));
-          }
-        };
+        //     if (metadata && metadata.batchNames) {
+        //       setBoxBatchNames(metadata.batchNames);
+        //     }
+        //     if (metadata && metadata.productNames) {
+        //       setBoxProductNames(metadata.productNames);
+        //     }
+        //     if (metadata && metadata.materialNames) {
+        //       setBoxMaterialNames(metadata.materialNames);
+        //     }
+        //   } catch (error) {
+        //     console.error("Error fetching metadata:", error);
+        //     // Fallback to extracting from current data if metadata endpoint fails
+        //     setBoxBatchNames(Array.from(new Set(data.map(item => item["Batch Name"]))));
+        //     setBoxProductNames(Array.from(new Set(data.map(item => item["Product Name"]))));
+        //     setBoxMaterialNames(Array.from(new Set(data.map(item => item["Material Name"]))));
+        //   }
+        // };
+
+        
         
         // Fetch metadata in the background
-        fetchMetadata();
+        // fetchMetadata();
+
+        setBoxBatchNames(
+          Array.from(new Set(data.map((item) => item["Batch Name"])))
+        );
+        setBoxProductNames(
+          Array.from(new Set(data.map((item) => item["Product Name"])))
+        );
+        setBoxMaterialNames(
+          Array.from(new Set(data.map((item) => item["Material Name"])))
+        );
+
+        if (selectedBoxBatchName.length > 0) {
+          data = data.filter((item) =>
+            selectedBoxBatchName.includes(item["Batch Name"])
+          );
+        }
+
+        if (selectedBoxProduct.length > 0) {
+          data = data.filter((item) =>
+            selectedBoxProduct.includes(item["Product Name"])
+          );
+        }
+
+        if (selectedBoxMaterial.length > 0) {
+          data = data.filter((item) =>
+            selectedBoxMaterial.includes(item["Material Name"])
+          );
+        }
+
+        
 
         // Format the data - no need to filter it again since the server already filtered it
         const formattedData = data.map((item) => ({
@@ -2528,7 +2560,6 @@ const TableView = () => {
                         </Box>
                       </>
                     )}
-
 
 
                     {activeTable === "batchProductionSummary" && (

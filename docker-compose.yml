@@ -1,0 +1,32 @@
+version: '3.9'
+
+services:
+  backend:
+    build:
+      context: ./hercules-backend
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./hercules-backend:/app
+    environment:
+      - FLASK_ENV=development
+      - SQLALCHEMY_DATABASE_URI=mssql+pyodbc://sa:Camille123123%29%29@host.docker.internal:1433/ASMREPORTING?driver=ODBC+Driver+17+for+SQL+Server
+    networks:
+      - hercules-net
+    restart: always
+
+  frontend:
+    build: ./hercules-frontend/hercules-frontend
+    container_name: hercules-frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./hercules-frontend/hercules-frontend:/app
+    depends_on:
+      - backend
+    networks:
+      - hercules-net
+    restart: always
+
+networks:
+  hercules-net:

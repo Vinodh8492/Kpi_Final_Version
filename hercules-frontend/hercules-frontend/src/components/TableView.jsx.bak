@@ -1,0 +1,1332 @@
+import React, { useEffect, useState } from "react";
+import {
+  Typography,
+  Box,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Button,
+  Menu,
+  TablePagination,
+  CircularProgress,
+} from "@mui/material";
+
+import axios from "axios";
+import {
+  Chart as ChartJS,
+  ArcElement,
+  Tooltip,
+  Legend,
+  LineElement,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  BarElement,
+  Title,
+  Filler,
+} from "chart.js";
+import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
+import Table from "@mui/material/Table";
+import TableBody from "@mui/material/TableBody";
+import TableCell from "@mui/material/TableCell";
+import TableContainer from "@mui/material/TableContainer";
+import TableHead from "@mui/material/TableHead";
+import TableRow from "@mui/material/TableRow";
+import Paper from "@mui/material/Paper";
+import "../App.css";
+import { useRef } from "react";
+import Topbar from "./Topbar";
+
+
+ChartJS.register(
+  ArcElement,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  LineElement,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  Filler
+);
+
+const TableView = () => {
+  // Add state for report data
+  const [dailyReportData, setDailyReportData] = useState([]);
+  const [weeklyReportData, setWeeklyReportData] = useState([]);
+  const [monthlyReportData, setMonthlyReportData] = useState([]);
+  const [isLoadingDaily, setIsLoadingDaily] = useState(false);
+  const [isLoadingWeekly, setIsLoadingWeekly] = useState(false);
+  const [isLoadingMonthly, setIsLoadingMonthly] = useState(false);
+
+  const [batchData, setBatchData] = useState([]);
+  const [selectedCardBgColor, setSelectedCardBgColor] = useState("White");
+  const [lineStrokeColor, setLineStrokeColor] = useState("#33691e");
+  const [pointFillColor, setPointFillColor] = useState("#a2cb74");
+  const [gradientColors, setGradientColors] = useState([]);
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [secondAnchorEl, setSecondAnchorEl] = useState(null);
+  const [thirdAnchorEl, setThirdAnchorEl] = useState(null);
+  const [activeTable, setActiveTable] = useState(null);
+  const [viewReport, setViewReport] = useState(false);
+
+  //pagination
+  const [page, setPage] = React.useState(0);
+  const [rowsPerPage, setRowsPerPage] = React.useState(10);
+  const [batchPage, setBatchPage] = React.useState(0);
+  const [batchRowsPerPage, setBatchRowsPerPage] = React.useState(5);
+  const [batchProdPage, setBatchProdPage] = useState(0);
+  const [batchProdRowsPerPage, setBatchProdRowsPerPage] = useState(10);
+  const [materialPage, setMaterialPage] = useState(0);
+  const [materialRowsPerPage, setMaterialRowsPerPage] = useState(10);
+
+  // boxes
+  const [boxBatchNames, setBoxBatchNames] = useState([]);
+  const [boxProductNames, setBoxProductNames] = useState([]);
+  // Initialize start date to beginning of current week (Monday)
+  const [selectedBoxStartDate, setSelectedBoxStartDate] = useState(() => {
+    const today = new Date();
+    const currentDay = today.getDay(); // 0 for Sunday, 1 for Monday, etc.
+    const monday = new Date(today);
+    // If today is Sunday (0), go back 6 days to get to Monday
+    // Otherwise subtract current day - 1 to get to Monday
+    monday.setDate(today.getDate() - (currentDay === 0 ? 6 : currentDay - 1));
+    monday.setHours(0, 0, 0, 0);
+    return monday;
+  });
+  // Initialize end date to end of current week (Sunday)
+  const [selectedBoxEndDate, setSelectedBoxEndDate] = useState(() => {
+    const today = new Date();
+    const currentDay = today.getDay(); // 0 for Sunday, 1 for Monday, etc.
+    const sunday = new Date(today);
+    // If today is Sunday (0), use today
+    // Otherwise add 7 - current day to get to Sunday
+    sunday.setDate(today.getDate() + (currentDay === 0 ? 0 : 7 - currentDay));
+    sunday.setHours(23, 59, 59, 999);
+    return sunday;
+  });
+  const [selectedBoxProduct, setSelectedBoxProduct] = useState([]);
+  const [selectedBoxMaterial, setSelectedBoxMaterial] = useState([]);
+
+  const [selectedBoxBatchName, setSelectedBoxBatchName] = useState([]);
+  const [boxMaterialNames, setBoxMaterialNames] = useState([]);
+
+  const [weekStartDate, setWeekStartDate] = useState(() => {
+    const today = new Date();
+    const sevenDaysAgo = new Date(today);
+    sevenDaysAgo.setDate(today.getDate() - 7);
+    sevenDaysAgo.setHours(0, 0, 0, 0);
+    return sevenDaysAgo;
+  });
+
+  const [monthStartDate, setMonthStartDate] = useState(() => {
+    const today = new Date();
+    const thirtyDaysAgo = new Date(today);
+    thirtyDaysAgo.setDate(today.getDate() - 30);
+    thirtyDaysAgo.setHours(0, 0, 0, 0);
+    return thirtyDaysAgo;
+  });
+
+  const [startDate, setStartDate] = useState(() => {
+    const today = new Date();
+    const yesterdayAtSevenAM = new Date(today);
+    yesterdayAtSevenAM.setDate(today.getDate() - 1);
+    yesterdayAtSevenAM.setHours(7, 0, 0, 0);
+    return yesterdayAtSevenAM;
+  });
+
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+
+  const dashboardRef = useRef();
+  const bgColorOptions = [
+    { name: "White", hex: "#ffffff" },
+    { name: "Mint", hex: "#90ee90" },
+    { name: "Steel Gray", hex: "#2F4F4F" },
+    { name: "Charcoal", hex: "#36454F" },
+    { name: "Slate Blue", hex: "#6A7FDB" },
+    { name: "Olive Drab", hex: "#6B8E23" },
+    { name: "Rust Red", hex: "#8B0000" },
+    { name: "Safety Orange", hex: "#FF6F00" },
+    { name: "Industrial Yellow Dark", hex: "#D4A628" },
+    { name: "Midnight Blue", hex: "#191970" },
+    { name: "Cobalt Blue", hex: "#0047AB" },
+  ];
+
+  const colorOptions = [
+    { name: "Cool White", hex: "#F9F9F9" },
+    { name: "Steel Gray", hex: "#2F4F4F" },
+    { name: "Charcoal", hex: "#36454F" },
+    { name: "Slate Blue", hex: "#6A7FDB" },
+    { name: "Olive Drab", hex: "#6B8E23" },
+    { name: "Rust Red", hex: "#8B0000" },
+    { name: "Safety Orange", hex: "#FF6F00" },
+    { name: "Industrial Yellow", hex: "#F4C542" },
+    { name: "Concrete Gray", hex: "#D3D3D3" },
+    { name: "Midnight Blue", hex: "#191970" },
+    { name: "Cobalt Blue", hex: "#0047AB" },
+    { name: "Jet Black", hex: "#000000" },
+  ];
+
+  const getHexByName = (name) => {
+    const allOptions = [...colorOptions, ...bgColorOptions];
+    const found = allOptions.find((c) => c.name === name);
+    return found ? found.hex : "#000000";
+  };
+
+  const getTextColorForBackground = (colorName) => {
+    const hex = getHexByName(colorName);
+    const lightBackgrounds = [
+      "#ffffff",
+      "#ffefef",
+      "#f8f9fa",
+      "#fce4ec",
+      "#ede7f6",
+      "#fff3e0",
+      "#90ee90",
+    ];
+    return lightBackgrounds.includes(hex.toLowerCase()) ? "#1a1a1a" : "#ffffff";
+  };
+
+  const getGradientColors = (baseColorHex) => {
+    const base = baseColorHex.replace("#", "");
+    const r = parseInt(base.substring(0, 2), 16);
+    const g = parseInt(base.substring(2, 4), 16);
+    const b = parseInt(base.substring(4, 6), 16);
+    const steps = 12;
+    const gradient = [];
+
+    for (let i = 0; i < steps; i++) {
+      const factor = i / (steps - 1);
+      const limit = 0.4;
+      const minR = Math.max(Math.round(r * limit), 30);
+      const minG = Math.max(Math.round(g * limit), 30);
+      const minB = Math.max(Math.round(b * limit), 30);
+      const newR = Math.round(r - (r - minR) * factor);
+      const newG = Math.round(g - (g - minG) * factor);
+      const newB = Math.round(b - (b - minB) * factor);
+
+      gradient.push(`rgb(${newR}, ${newG}, ${newB})`);
+    }
+
+    return gradient;
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+    setSecondAnchorEl(null);
+    setThirdAnchorEl(null);
+  };
+
+  const showTables = (tableName) => {
+    setActiveTable(tableName);
+    handleMenuClose();
+  };
+
+  const handleStartBoxDateChange = (newDate) => {
+    if (newDate) {
+      setSelectedBoxStartDate(newDate);
+    }
+  };
+
+  const handleEndBoxDateChange = (newDate) => {
+    if (newDate) {
+      setSelectedBoxEndDate(newDate);
+    }
+  };
+  //pagination
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  // Handle rows per page change
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  const paginatedData = [...batchData]
+    .sort((a, b) => a.orderId - b.orderId)
+    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+  const dailySummaryData = Object.values(
+    batchData
+      .filter((item) => {
+        if (!startDate) return true;
+        const itemDate = new Date(item.batchStart);
+        const start = new Date(startDate);
+        start.setHours(7, 0, 0, 0);
+        const end = new Date(start);
+        end.setDate(start.getDate() + 1);
+        end.setHours(7, 0, 0, 0);
+        return itemDate >= start && itemDate < end;
+      })
+      .reduce((acc, item) => {
+        const key = item.productName;
+        if (!acc[key]) {
+          acc[key] = {
+            productName: item.productName,
+            batchCount: 0,
+            sumSP: 0,
+            sumAct: 0,
+          };
+        }
+        acc[key].batchCount += 1;
+        acc[key].sumSP += Number(item.setPointFloat) || 0;
+        acc[key].sumAct += Number(item.actualValueFloat) || 0;
+        return acc;
+      }, {})
+  );
+
+  const paginatedDailyData = dailySummaryData.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
+  const handleBatchPageChange = (event, newPage) => {
+    setBatchPage(newPage);
+    setBatchProdPage(newPage);
+  };
+
+  const handleBatchRowsPerPageChange = (event) => {
+    setBatchRowsPerPage(parseInt(event.target.value, 10));
+    setBatchPage(0);
+    setBatchProdRowsPerPage(parseInt(event.target.value, 10));
+    setBatchProdPage(0);
+  };
+
+  const groupedBatchData = Object.entries(
+    batchData.reduce((acc, item) => {
+      const key = `${item.batchName?.trim()}___${item.productName?.trim()}`;
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(item);
+      return acc;
+    }, {})
+  );
+
+  const paginatedGroupedBatchData = groupedBatchData.slice(
+    batchPage * batchRowsPerPage,
+    batchPage * batchRowsPerPage + batchRowsPerPage
+  );
+
+  const paginationWM = (data) => (
+    data.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+  );
+
+  const filterWeekly = () => {
+    if (!weekStartDate) return batchData;
+    const start = new Date(weekStartDate);
+    start.setHours(7, 0, 0, 0);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 7);
+    end.setHours(7, 0, 0, 0);
+    return batchData.filter((item) => {
+      const date = new Date(item.batchStart);
+      return date >= start && date < end;
+    });
+  };
+
+  const filterMonthly = () => {
+    if (!monthStartDate) return batchData;
+    const start = new Date(monthStartDate);
+    start.setHours(7, 0, 0, 0);
+    const end = new Date(start);
+    end.setMonth(end.getMonth() + 1);
+    end.setHours(7, 0, 0, 0);
+    return batchData.filter((item) => {
+      const date = new Date(item.batchStart);
+      return date >= start && date < end;
+    });
+  };
+
+  const renderPagination = (data) => (
+    <TablePagination
+      rowsPerPageOptions={[5, 10, 25, 35]}
+      component="div"
+      count={data.length}
+      rowsPerPage={rowsPerPage}
+      page={page}
+      onPageChange={handleChangePage}
+      onRowsPerPageChange={handleChangeRowsPerPage}
+    />
+  );
+
+  const weeklyData = filterWeekly();
+  const monthlyData = filterMonthly();
+
+
+  useEffect(() => {
+    const fetchBoxData = async () => {
+      try {
+        // Skip data fetching if initial load isn't complete (View button not clicked yet)
+        // and this isn't a manual view request
+        if (!initialLoadComplete && !viewReport) {
+          console.log("Skipping initial data load until View button is clicked");
+          return;
+        }
+        
+        // For initial load, viewReport might be false but we still want to load data
+        // Only skip if dates are missing
+        if (!selectedBoxStartDate || !selectedBoxEndDate) {
+          console.warn("Please select both start and end dates");
+          return;
+        }
+
+        // Prepare API URL with query parameters - explicitly excluding any limit parameter
+        let apiUrl = "http://host.docker.internal:5000/api/kpi";
+        const params = new URLSearchParams();
+        
+        // Add date range parameters - these are required
+        params.append('startDate', selectedBoxStartDate.toISOString());
+        params.append('endDate', selectedBoxEndDate.toISOString());
+        
+        // IMPORTANT: Force strict date filtering on the backend
+        params.append('strictDateFilter', 'true');
+        
+        // Set pagination parameters to null/undefined to ensure we get ALL data for the date range
+        // but ONLY for the selected date range
+        params.append('page', 'all');
+        params.append('limit', 'none');
+        
+        // Add batch, product, and material filters if selected
+        if (selectedBoxBatchName.length > 0) {
+          selectedBoxBatchName.forEach(batch => params.append('batch', batch));
+        }
+        
+        if (selectedBoxProduct.length > 0) {
+          selectedBoxProduct.forEach(product => params.append('product', product));
+        }
+        
+        if (selectedBoxMaterial.length > 0) {
+          selectedBoxMaterial.forEach(material => params.append('material', material));
+        }
+        
+        // Append params to URL
+        apiUrl += '?' + params.toString();
+        
+        console.log("Fetching data with URL:", apiUrl);
+
+        const response = await axios.get(apiUrl);
+
+        let data = response.data;
+
+        console.log(`Raw data response length: ${typeof data === 'object' ? 
+          (Array.isArray(data) ? data.length : Object.keys(data).length) : 
+          'not an object'}`);
+
+        // If response is a string, try parsing it
+        if (typeof data === "string") {
+          try {
+            data = JSON.parse(data.replace(/NaN/g, "null"));
+          } catch (parseError) {
+            console.error("Error parsing JSON:", parseError.message);
+            return;
+          }
+        }
+
+        // If response is an object with a specific key (like result or data), unwrap it
+        if (!Array.isArray(data) && typeof data === "object") {
+          if (Array.isArray(data.result)) {
+            data = data.result;
+          } else if (Array.isArray(data.data)) {
+            data = data.data;
+          } else {
+            console.error("Expected array but got object:", data);
+            return;
+          }
+        }
+
+        // Final safety check
+        if (!Array.isArray(data)) {
+          console.error("Expected array, got:", typeof data, data);
+          return;
+        }
+
+        console.log(`Received ${data.length} records for the selected date range`);
+
+        // Set unique filter values for the dropdown menus
+        setBoxBatchNames(
+          Array.from(new Set(data.map((item) => item["Batch Name"])))
+        );
+        setBoxProductNames(
+          Array.from(new Set(data.map((item) => item["Product Name"])))
+        );
+        setBoxMaterialNames(
+          Array.from(new Set(data.map((item) => item["Material Name"])))
+        );
+
+        // Format the data - no need to filter it again since the server already filtered it
+        const formattedData = data.map((item) => ({
+          batchGuid: item["Batch GUID"] || "Unknown",
+          batchName: item["Batch Name"] || "Unknown",
+          batchStart: item["Batch Act Start"] || "N/A",
+          batchEnd: item["Batch Act End"] || "N/A",
+          productName: item["Product Name"] || "Unknown",
+          materialName: item["Material Name"] || "Unknown",
+          materialCode: item["Material Code"] || "Unknown",
+          quantity: item["Quantity"] || 0,
+          setPointFloat: item["SetPoint Float"] || 0,
+          actualValueFloat: item["Actual Value Float"] || 0,
+          sourceServer: item["Source Server"] || "Unknown",
+          rootGuid: item["ROOTGUID"] || "Unknown",
+          orderId: item["OrderId"] || "Unknown",
+        }));
+
+        setBatchData(formattedData);
+        // Automatically set viewReport to true after initial data load
+        if (!viewReport) {
+          setViewReport(true);
+        }
+        setInitialLoadComplete(true);
+      } catch (error) {
+        console.error("Error fetching table data:", error);
+      }
+    };
+
+    // Load data when component mounts and when filters change
+    fetchBoxData();
+  }, [
+    // On first render and when these dependencies change
+    selectedBoxStartDate,
+    selectedBoxEndDate,
+    selectedBoxBatchName,
+    selectedBoxProduct,
+    selectedBoxMaterial,
+    viewReport,
+    initialLoadComplete
+    // Remove viewReport from dependencies since we now want to load on mount
+  ]);
+
+
+  useEffect(() => {
+    const selectedHex = getHexByName(selectedCardBgColor);
+    const newGradient = getGradientColors(selectedHex);
+    setGradientColors(newGradient);
+    setLineStrokeColor(newGradient[newGradient.length - 1]);
+    setPointFillColor(newGradient[0]);
+  }, [selectedCardBgColor]);
+
+  const [handleButton, setHandleButton] = useState(false)
+
+  // Function to fetch daily report data
+  const fetchDailyReport = async () => {
+    if (!startDate) {
+      console.warn("Please select a date for daily report");
+      return;
+    }
+
+    try {
+      setIsLoadingDaily(true);
+      // Create start and end dates for the day (7am to 7am next day)
+      const start = new Date(startDate);
+      start.setHours(7, 0, 0, 0);
+      const end = new Date(start);
+      end.setDate(end.getDate() + 1);
+      end.setHours(7, 0, 0, 0);
+      
+      console.log(`Fetching daily report from ${start.toISOString()} to ${end.toISOString()}`);
+      
+      // Call the new report API endpoint
+      const response = await axios.get(
+        `http://host.docker.internal:5000/api/kpi/reports?reportType=daily&startDate=${start.toISOString()}&endDate=${end.toISOString()}`
+      );
+      
+      if (response.data && response.data.data) {
+        console.log(`Received ${response.data.data.length} records for daily report`);
+        setDailyReportData(response.data.data);
+      }
+    } catch (error) {
+      console.error("Error fetching daily report:", error);
+    } finally {
+      setIsLoadingDaily(false);
+    }
+  };
+
+  // Function to fetch weekly report data
+  const fetchWeeklyReport = async () => {
+    if (!weekStartDate) {
+      console.warn("Please select a start date for weekly report");
+      return;
+    }
+
+    try {
+      setIsLoadingWeekly(true);
+      // Create start and end dates for the week
+      const start = new Date(weekStartDate);
+      start.setHours(7, 0, 0, 0);
+      const end = new Date(start);
+      end.setDate(end.getDate() + 7);
+      end.setHours(7, 0, 0, 0);
+      
+      console.log(`Fetching weekly report from ${start.toISOString()} to ${end.toISOString()}`);
+      
+      // Call the new report API endpoint
+      const response = await axios.get(
+        `http://host.docker.internal:5000/api/kpi/reports?reportType=weekly&startDate=${start.toISOString()}&endDate=${end.toISOString()}`
+      );
+      
+      if (response.data && response.data.data) {
+        console.log(`Received ${response.data.data.length} records for weekly report`);
+        setWeeklyReportData(response.data.data);
+      }
+    } catch (error) {
+      console.error("Error fetching weekly report:", error);
+    } finally {
+      setIsLoadingWeekly(false);
+    }
+  };
+
+  // Function to fetch monthly report data
+  const fetchMonthlyReport = async () => {
+    if (!monthStartDate) {
+      console.warn("Please select a start date for monthly report");
+      return;
+    }
+
+    try {
+      setIsLoadingMonthly(true);
+      // Create start and end dates for the month
+      const start = new Date(monthStartDate);
+      start.setHours(7, 0, 0, 0);
+      const end = new Date(start);
+      end.setMonth(end.getMonth() + 1);
+      end.setHours(7, 0, 0, 0);
+      
+      console.log(`Fetching monthly report from ${start.toISOString()} to ${end.toISOString()}`);
+      
+      // Call the new report API endpoint
+      const response = await axios.get(
+        `http://host.docker.internal:5000/api/kpi/reports?reportType=monthly&startDate=${start.toISOString()}&endDate=${end.toISOString()}`
+      );
+      
+      if (response.data && response.data.data) {
+        console.log(`Received ${response.data.data.length} records for monthly report`);
+        setMonthlyReportData(response.data.data);
+      }
+    } catch (error) {
+      console.error("Error fetching monthly report:", error);
+    } finally {
+      setIsLoadingMonthly(false);
+    }
+  };
+
+  return (
+    <div ref={dashboardRef} className="print-container">
+      <LocalizationProvider dateAdapter={AdapterDateFns}>
+        <Box sx={{ p: 3 }}>
+          <div id="non-printable-area">
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                mb: 2,
+              }}
+            >
+
+            </Box>
+          </div>
+
+          <div id="external-component-id">
+            {/* Filters */}
+            <Box
+              sx={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: 2,
+                px: 3,
+                py: 2,
+                mb: 2,
+                backgroundColor: "#fff",
+                borderRadius: 2,
+                boxShadow: "0 2px 10px rgba(0, 0, 0, 0.08)",
+                justifyContent: "flex-start",
+                alignItems: "flex-end",
+                width: "100%",
+                marginLeft: "-22px",
+              }}
+            >
+              {/* Start Date */}
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  flex: "1 1 180px",
+                  maxWidth: 200,
+                  order: 1
+                }}
+              >
+                <Typography sx={{ fontWeight: 600 }} mb={1}>
+                  Select Start Date:
+                </Typography>
+                <DateTimePicker
+                  value={selectedBoxStartDate}
+                  onChange={handleStartBoxDateChange}
+                  format="MM/dd/yyyy HH:mm"
+                  slotProps={{
+                    textField: {
+                      size: "small",
+                      sx: {
+                        backgroundColor: "#f5f5f5",
+                        borderRadius: 1,
+                        width: "100%",
+                      },
+                    },
+                  }}
+                />
+              </Box>
+
+              {/* End Date */}
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  flex: "1 1 180px",
+                  maxWidth: 200,
+                  order: 2
+                }}
+              >
+                <Typography sx={{ fontWeight: 600 }} mb={1}>
+                  Select End Date:
+                </Typography>
+                <DateTimePicker
+                  value={selectedBoxEndDate}
+                  onChange={handleEndBoxDateChange}
+                  format="MM/dd/yyyy HH:mm"
+                  slotProps={{
+                    textField: {
+                      size: "small",
+                      sx: {
+                        backgroundColor: "#f5f5f5",
+                        borderRadius: 1,
+                        width: "100%",
+                      },
+                    },
+                  }}
+                />
+              </Box>
+
+              {/* Product Dropdown */}
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  flex: "1 1 180px",
+                  maxWidth: 200,
+                  order: 3
+                }}
+              >
+                <Typography sx={{ fontWeight: 600 }} mb={1}>
+                  Select Product:
+                </Typography>
+                <FormControl size="small" fullWidth>
+                  <InputLabel>Select Product</InputLabel>
+                  <Select
+                    multiple
+                    value={selectedBoxProduct}
+                    onChange={(e) => {
+                      if (e.target.value.includes("all")) {
+                        if (
+                          selectedBoxProduct.length === boxProductNames.length
+                        ) {
+                          setSelectedBoxProduct([]);
+                        } else {
+                          setSelectedBoxProduct([...boxProductNames]);
+                        }
+                      } else {
+                        setSelectedBoxProduct(e.target.value);
+                      }
+                    }}
+                    renderValue={(selected) => {
+                      if (selected.length === 0) return "";
+                      return selected.join(", ");
+                    }}
+                    displayEmpty
+                    sx={{
+                      backgroundColor: "#f8f9fa",
+                      borderRadius: 1,
+                    }}
+                  >
+                    <MenuItem
+                      value="all"
+                      sx={{ fontWeight: 600 }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (
+                          selectedBoxProduct.length === boxProductNames.length
+                        ) {
+                          setSelectedBoxProduct([]);
+                        } else {
+                          setSelectedBoxProduct([...boxProductNames]);
+                        }
+                      }}
+                    >
+                      Select All
+                    </MenuItem>
+                    {boxProductNames.map((product) => (
+                      <MenuItem
+                        key={product}
+                        value={product}
+                        sx={{
+                          fontWeight: selectedBoxProduct.includes(product)
+                            ? 600
+                            : 400,
+                          color: selectedBoxProduct.includes(product)
+                            ? "#000"
+                            : "inherit",
+                        }}
+                      >
+                        {product}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Box>
+
+              {/* Batch Dropdown */}
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  flex: "1 1 180px",
+                  maxWidth: 200,
+                  order: 4
+                }}
+              >
+                <Typography sx={{ fontWeight: 600 }} mb={1}>
+                  Select Batch:
+                </Typography>
+                <FormControl size="small" fullWidth>
+                  <InputLabel>Select Batch</InputLabel>
+                  <Select
+                    multiple
+                    value={selectedBoxBatchName}
+                    onChange={(e) => {
+                      // Handle normal selection changes
+                      if (e.target.value.includes("all")) {
+                        if (
+                          selectedBoxBatchName.length === boxBatchNames.length
+                        ) {
+                          setSelectedBoxBatchName([]);
+                        } else {
+                          setSelectedBoxBatchName([...boxBatchNames]);
+                        }
+                      } else {
+                        setSelectedBoxBatchName(e.target.value);
+                      }
+                    }}
+                    renderValue={(selected) => {
+                      if (selected.length === 0) return "";
+                      if (selected.length === boxBatchNames.length) return "";
+                      return selected.join(", ");
+                    }}
+                    sx={{
+                      backgroundColor: "#f8f9fa",
+                      borderRadius: 1,
+                    }}
+                  >
+                    <MenuItem
+                      value="all"
+                      sx={{ fontWeight: 600 }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (
+                          selectedBoxBatchName.length === boxBatchNames.length
+                        ) {
+                          setSelectedBoxBatchName([]);
+                        } else {
+                          setSelectedBoxBatchName([...boxBatchNames]);
+                        }
+                      }}
+                    >
+                      Select All
+                    </MenuItem>
+                    {boxBatchNames.map((batch) => (
+                      <MenuItem
+                        key={batch}
+                        value={batch}
+                        sx={{
+                          fontWeight: selectedBoxBatchName.includes(batch)
+                            ? 600
+                            : 400,
+                          color: selectedBoxBatchName.includes(batch)
+                            ? "#000"
+                            : "inherit",
+                        }}
+                      >
+                        {batch}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Box>
+
+              {/* Material Dropdown */}
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  flex: "1 1 180px",
+                  maxWidth: 200,
+                  order: 5
+                }}
+              >
+                <Typography sx={{ fontWeight: 600 }} mb={1}>
+                  Select Material:
+                </Typography>
+                <FormControl size="small" fullWidth>
+                  <InputLabel>Select Material</InputLabel>
+                  <Select
+                    multiple
+                    value={selectedBoxMaterial}
+                    onChange={(e) => {
+                      if (e.target.value.includes("all")) {
+                        if (
+                          selectedBoxMaterial.length ===
+                          boxMaterialNames.length
+                        ) {
+                          setSelectedBoxMaterial([]);
+                        } else {
+                          setSelectedBoxMaterial([...boxMaterialNames]);
+                        }
+                      } else {
+                        setSelectedBoxMaterial(e.target.value);
+                      }
+                    }}
+                    renderValue={(selected) => selected.join(", ")}
+                    displayEmpty
+                    sx={{
+                      backgroundColor: "#F8F9FA",
+                      borderRadius: 1,
+                    }}
+                  >
+                    <MenuItem
+                      value="all"
+                      sx={{ fontWeight: 600 }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (
+                          selectedBoxMaterial.length ===
+                          boxMaterialNames.length
+                        ) {
+                          setSelectedBoxMaterial([]);
+                        } else {
+                          setSelectedBoxMaterial([...boxMaterialNames]);
+                        }
+                      }}
+                    >
+                      Select All
+                    </MenuItem>
+                    {boxMaterialNames.map((material) => (
+                      <MenuItem
+                        key={material}
+                        value={material}
+                        sx={{
+                          fontWeight: selectedBoxMaterial.includes(material)
+                            ? 600
+                            : 400,
+                          color: selectedBoxMaterial.includes(material)
+                            ? "#000"
+                            : "inherit",
+                        }}
+                      >
+                        {material}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Box>
+
+              {/* View Button */}
+              <Box
+                sx={{
+                  flex: "0 0 auto",
+                  display: "flex",
+                  alignItems: "flex-end",
+                  mt: { xs: 2, md: 0 },
+                  order: 6
+                }}
+              >
+                <Button
+                  variant="contained"
+                  onClick={() => {
+                    setViewReport(true);
+                    setInitialLoadComplete(true);
+                  }}
+                  sx={{
+                    height: 40,
+                    background: "linear-gradient(135deg, #4B5563, #9CA3AF)",
+                    color: "#fff",
+                    fontWeight: "bold",
+                    borderRadius: 2,
+                    px: 3,
+                    boxShadow:
+                      "4px 4px 10px rgba(0, 0, 0, 0.4), inset -1px -1px 2px rgba(255, 255, 255, 0.1)",
+                    transition: "all 0.2s ease",
+                    transform: "translateY(-1px)",
+                    "&:hover": {
+                      background: "linear-gradient(135deg, #374151, #6B7280)",
+                      boxShadow:
+                        "2px 2px 6px rgba(0, 0, 0, 0.3), inset -1px -1px 1px rgba(255, 255, 255, 0.05)",
+                      transform: "translateY(1px)",
+                    },
+                  }}
+                >
+                  View
+                </Button>
+              </Box>
+            </Box>
+
+            {/* Report Type Buttons */}
+            <Box
+              sx={{
+                display: "flex",
+                flexWrap: "nowrap",
+                gap: 2,
+                mb: 3,
+                "& .MuiButton-root": {
+                  borderRadius: "12px",
+                  fontWeight: 600,
+                  textTransform: "none",
+                  fontSize: "0.875rem",
+                  padding: "6px 16px",
+                  transition: "0.3s",
+                },
+              }}
+              aria-label="table controls"
+            >
+              {[
+                {
+                  key: "productBatchSummary",
+                  label: "Product Batch Summary",
+                },
+                {
+                  key: "batchProductionSummary",
+                  label: "Batch Production Summary",
+                },
+                { key: "nfmWeekly", label: "NFM Weekly" },
+                { key: "nfmMonthly", label: "NFM Monthly" },
+                { key: "dailyReport", label: "Daily Report" },
+                {
+                  key: "materialConsumptionReport",
+                  label: "Material Consumption",
+                },
+                { key: "detailedReport", label: "Detailed Report" },
+              ].map((btn) => {
+                const isActive = activeTable === btn.key;
+
+                return (
+                  <Button
+                    key={btn.key}
+                    variant="contained"
+                    onClick={() => setActiveTable(btn.key)}
+                    sx={{
+                      background: isActive
+                        ? "linear-gradient(145deg, #1e88e5, #42a5f5)"
+                        : "#ffffff",
+                      color: isActive ? "#ffffff" : "#1565c0",
+                      border: isActive
+                        ? "2px solid #1565c0"
+                        : "1px solid #ccc",
+                      boxShadow: isActive
+                        ? "inset 2px 2px 4px rgba(255,255,255,0.2), 4px 4px 8px rgba(0,0,0,0.3)"
+                        : "6px 6px 12px rgba(0,0,0,0.1), -3px -3px 6px rgba(255,255,255,0.8)",
+                      transform: isActive
+                        ? "translateY(2px)"
+                        : "translateY(0)",
+                      "&:hover": {
+                        background: isActive
+                          ? "linear-gradient(145deg, #1565c0, #1e88e5)"
+                          : "#f5f5f5",
+                        color: isActive ? "#ffffff" : "#0d47a1",
+                        boxShadow: isActive
+                          ? "inset 2px 2px 6px rgba(0,0,0,0.3)"
+                          : "3px 3px 6px rgba(0,0,0,0.15), -2px -2px 4px rgba(255,255,255,0.7)",
+                        transform: "translateY(1px)",
+                      },
+                    }}
+                  >
+                    {btn.label}
+                  </Button>
+                );
+              })}
+            </Box>
+
+            {/* Weekly Report Section */}
+            {activeTable === "nfmWeekly" && (
+              <Box
+                sx={{
+                  my: 2,
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  flexDirection: "column",
+                }}
+              >
+                <Typography
+                  variant="subtitle1"
+                  fontWeight="bold"
+                  gutterBottom
+                >
+                  Select Week Start Date:
+                </Typography>
+
+                <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                  <DateTimePicker
+                    label="Week Start Date"
+                    value={weekStartDate}
+                    onChange={(newValue) => setWeekStartDate(newValue)}
+                    format="MM/dd/yyyy HH:mm"
+                    slotProps={{
+                      textField: {
+                        placeholder: "MM/DD/YYYY HH:MM",
+                        size: "small",
+                        sx: {
+                          width: 220,
+                          backgroundColor: "#ffffff",
+                          borderRadius: 2,
+                          boxShadow: "0 1px 4px rgba(0, 0, 0, 0.1)",
+                          "& .MuiOutlinedInput-root": {
+                            borderRadius: 2,
+                            "& fieldset": {
+                              borderColor: "#cfd8dc",
+                            },
+                            "&:hover fieldset": {
+                              borderColor: "#90caf9",
+                            },
+                            "&.Mui-focused fieldset": {
+                              borderColor: "#42a5f5",
+                            },
+                          },
+                          "& input::placeholder": {
+                            textTransform: "uppercase",
+                            color: "#9e9e9e",
+                            fontWeight: 500,
+                          },
+                        },
+                      },
+                    }}
+                  />
+                  
+                  <Button
+                    variant="contained"
+                    onClick={fetchWeeklyReport}
+                    disabled={isLoadingWeekly}
+                    sx={{
+                      height: 40,
+                      background: "linear-gradient(135deg, #4B5563, #9CA3AF)",
+                      color: "#fff",
+                      fontWeight: "bold",
+                      borderRadius: 2,
+                      px: 3,
+                      boxShadow:
+                        "4px 4px 10px rgba(0, 0, 0, 0.4), inset -1px -1px 2px rgba(255, 255, 255, 0.1)",
+                      transition: "all 0.2s ease",
+                      transform: "translateY(-1px)",
+                      "&:hover": {
+                        background: "linear-gradient(135deg, #374151, #6B7280)",
+                        boxShadow:
+                          "2px 2px 6px rgba(0, 0, 0, 0.3), inset -1px -1px 1px rgba(255, 255, 255, 0.05)",
+                        transform: "translateY(1px)",
+                      },
+                    }}
+                  >
+                    {isLoadingWeekly ? <CircularProgress size={24} color="inherit" /> : "View"}
+                  </Button>
+                </Box>
+              </Box>
+            )}
+
+            {/* Monthly Report Section */}
+            {activeTable === "nfmMonthly" && (
+              <Box
+                sx={{
+                  my: 2,
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  flexDirection: "column",
+                }}
+              >
+                <Typography
+                  variant="subtitle1"
+                  fontWeight="bold"
+                  gutterBottom
+                >
+                  Select Month Start Date:
+                </Typography>
+
+                <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                  <DateTimePicker
+                    label="Select Start Date"
+                    value={monthStartDate}
+                    onChange={(newValue) => setMonthStartDate(newValue)}
+                    format="MM/dd/yyyy HH:mm"
+                    views={["year", "month", "day"]}
+                    slotProps={{
+                      textField: {
+                        placeholder: "MM/DD/YYYY HH:MM",
+                        size: "small",
+                        sx: {
+                          width: 220,
+                          backgroundColor: "#ffffff",
+                          borderRadius: 2,
+                          boxShadow: "0 1px 4px rgba(0, 0, 0, 0.1)",
+                          "& .MuiOutlinedInput-root": {
+                            borderRadius: 2,
+                            "& fieldset": {
+                              borderColor: "#cfd8dc",
+                            },
+                            "&:hover fieldset": {
+                              borderColor: "#90caf9",
+                            },
+                            "&.Mui-focused fieldset": {
+                              borderColor: "#42a5f5",
+                            },
+                          },
+                          "& input::placeholder": {
+                            textTransform: "uppercase",
+                            color: "#9e9e9e",
+                            fontWeight: 500,
+                          },
+                        },
+                      },
+                    }}
+                  />
+                  
+                  <Button
+                    variant="contained"
+                    onClick={fetchMonthlyReport}
+                    disabled={isLoadingMonthly}
+                    sx={{
+                      height: 40,
+                      background: "linear-gradient(135deg, #4B5563, #9CA3AF)",
+                      color: "#fff",
+                      fontWeight: "bold",
+                      borderRadius: 2,
+                      px: 3,
+                      boxShadow:
+                        "4px 4px 10px rgba(0, 0, 0, 0.4), inset -1px -1px 2px rgba(255, 255, 255, 0.1)",
+                      transition: "all 0.2s ease",
+                      transform: "translateY(-1px)",
+                      "&:hover": {
+                        background: "linear-gradient(135deg, #374151, #6B7280)",
+                        boxShadow:
+                          "2px 2px 6px rgba(0, 0, 0, 0.3), inset -1px -1px 1px rgba(255, 255, 255, 0.05)",
+                        transform: "translateY(1px)",
+                      },
+                    }}
+                  >
+                    {isLoadingMonthly ? <CircularProgress size={24} color="inherit" /> : "View"}
+                  </Button>
+                </Box>
+              </Box>
+            )}
+
+            {/* Daily Report Section */}
+            {activeTable === "dailyReport" && (
+              <Box
+                sx={{
+                  my: 2,
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  flexDirection: "column",
+                }}
+              >
+                <Typography
+                  variant="subtitle1"
+                  fontWeight="bold"
+                  gutterBottom
+                >
+                  Select Date Start:
+                </Typography>
+
+                <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                  <DateTimePicker
+                    label="Start Date"
+                    value={startDate}
+                    onChange={(newValue) => setStartDate(newValue)}
+                    format="MM/dd/yyyy HH:mm"
+                    slotProps={{
+                      textField: {
+                        placeholder: "MM/DD/YYYY HH:MM",
+                        size: "small",
+                        sx: {
+                          width: 220,
+                          backgroundColor: "#ffffff",
+                          borderRadius: 2,
+                          boxShadow: "0 1px 4px rgba(0, 0, 0, 0.1)",
+                          "& .MuiOutlinedInput-root": {
+                            borderRadius: 2,
+                            "& fieldset": {
+                              borderColor: "#cfd8dc",
+                            },
+                            "&:hover fieldset": {
+                              borderColor: "#90caf9",
+                            },
+                            "&.Mui-focused fieldset": {
+                              borderColor: "#42a5f5",
+                            },
+                          },
+                          "& input::placeholder": {
+                            textTransform: "uppercase",
+                            color: "#9e9e9e",
+                            fontWeight: 500,
+                          },
+                        },
+                      },
+                    }}
+                  />
+                  
+                  <Button
+                    variant="contained"
+                    onClick={fetchDailyReport}
+                    disabled={isLoadingDaily}
+                    sx={{
+                      height: 40,
+                      background: "linear-gradient(135deg, #4B5563, #9CA3AF)",
+                      color: "#fff",
+                      fontWeight: "bold",
+                      borderRadius: 2,
+                      px: 3,
+                      boxShadow:
+                        "4px 4px 10px rgba(0, 0, 0, 0.4), inset -1px -1px 2px rgba(255, 255, 255, 0.1)",
+                      transition: "all 0.2s ease",
+                      transform: "translateY(-1px)",
+                      "&:hover": {
+                        background: "linear-gradient(135deg, #374151, #6B7280)",
+                        boxShadow:
+                          "2px 2px 6px rgba(0, 0, 0, 0.3), inset -1px -1px 1px rgba(255, 255, 255, 0.05)",
+                        transform: "translateY(1px)",
+                      },
+                    }}
+                  >
+                    {isLoadingDaily ? <CircularProgress size={24} color="inherit" /> : "View"}
+                  </Button>
+                </Box>
+              </Box>
+            )}
+
+            {/* Tables will render here based on activeTable */}
+            {viewReport && activeTable && (
+              <TableContainer component={Paper}>
+                {/* Table content will be conditionally rendered here */}
+                {activeTable === "productBatchSummary" && (
+                  <Typography variant="h6">Product Batch Summary</Typography>
+                )}
+              </TableContainer>
+            )}
+          </div>
+
+          <div id="printable-area">
+            {handleButton && <Topbar />}
+          </div>
+        </Box>
+      </LocalizationProvider>
+    </div>
+  );
+};
+
+export default TableView;
